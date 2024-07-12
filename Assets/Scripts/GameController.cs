@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
+//using UnityEngine.UIElements;
 
 public class GameController : MonoBehaviour
 {
@@ -22,10 +23,15 @@ public class GameController : MonoBehaviour
     private int countCorrectGuesses;
     private int gameGuesses;
     private int firstGuessIndex, secondGuessIndex;
-    private string firstGuessPuzzle, secondGuessPuzzle; 
+    private string firstGuessPuzzle, secondGuessPuzzle;
+
+    
+   
     private void Awake()
     {
-        puzzles = Resources.LoadAll<Sprite>("Fruits");
+  
+       puzzles = Resources.LoadAll<Sprite>("Fruits");
+
     }
     void Start ()
     {

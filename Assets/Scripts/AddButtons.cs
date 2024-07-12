@@ -9,8 +9,9 @@ public class AddButtons : MonoBehaviour
     private Transform puzzleField;
     [SerializeField]
     private GameObject btn;
-    [SerializeField]
-    private int amount; 
+
+    public int amount; 
+    
     private void Awake()
     {
         for(int i=0; i<amount; i++)
