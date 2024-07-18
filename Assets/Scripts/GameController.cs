@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
+using UnityEditor;
 //using UnityEngine.UIElements;
 
 public class GameController : MonoBehaviour
@@ -13,24 +15,32 @@ public class GameController : MonoBehaviour
     private Sprite bgImage; 
 
     public List<Button> btns = new List<Button>();
-
-    public Sprite[] puzzles;
-
-    public List<Sprite> gamePuzzles = new List<Sprite>();
+    //Kho chua' hinh` anh
+    public Sprite[] imagePool;
+    //Kho chua' cac' hinh` anh dc chon. tu` kho chua' anh
+    public List<Sprite> selectedImagePool = new List<Sprite>();
 
     private bool firstGuess, secondGuess;
     //private int countGuesses;
     private int countCorrectGuesses;
     private int gameGuesses;
     private int firstGuessIndex, secondGuessIndex;
-    private string firstGuessPuzzle, secondGuessPuzzle;
-
-    
+    private string firstGuessName, secondGuessName;
+    private AudioManager audioManager;
+    private Button CheatButton;
+    [SerializeField] private GameObject WinMenu;
+    [SerializeField] private TextMeshProUGUI timerText;
+    float elapsedTime = 0;
+    bool timerActive = true;
+    [SerializeField] private TextMeshProUGUI timeResult;
+    [SerializeField] private GameObject timer;
    
     private void Awake()
     {
   
-       puzzles = Resources.LoadAll<Sprite>("Fruits");
+       imagePool = Resources.LoadAll<Sprite>("Fruits");
+       audioManager = GameObject.FindWithTag("Audio").GetComponent<AudioManager>();
+       CheatButton = GameObject.FindWithTag("Cheat").GetComponent<Button>();
 
     }
     void Start ()
@@ -38,7 +48,7 @@ public class GameController : MonoBehaviour
         GetButtons();
         AddClickListener();
         AddGamePuzzlesImg();
-        shuffle(gamePuzzles); 
+        shuffle(selectedImagePool); 
         gameGuesses = btns.Count / 2;   
     }
         
@@ -58,22 +68,32 @@ public class GameController : MonoBehaviour
         {
             btn.onClick.AddListener(() => PickAPuzzle()); 
         }
+        CheatButton.onClick.AddListener(() => ShowAll());
     }
     public void PickAPuzzle()
-    { 
-        if(!firstGuess)
+    {
+        //Ten cua button vua` dc chon.(cx la` index cua no', do dat ten tu 0 -> amount)
+        string name = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.name;
+        //Neu chua chon. thi` cho chon.
+        if (!firstGuess)
         {
+            //k cho chon nx
             firstGuess = true;
-            firstGuessIndex = int.Parse(UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.name);
-            firstGuessPuzzle = gamePuzzles[firstGuessIndex].name;
-            btns[firstGuessIndex].image.sprite = gamePuzzles[firstGuessIndex]; 
+            //parse dung` de chuyen string -> int
+            firstGuessIndex = int.Parse(name);
+            //luu tru ten cua hinh` anh de so sanh'
+            firstGuessName = selectedImagePool[firstGuessIndex].name;
+            //Gan' hinh` anh vao` button khi bam vao` -->ban than button k co hinh anh
+            btns[firstGuessIndex].image.sprite = selectedImagePool[firstGuessIndex];
+            audioManager.PlaySFX(audioManager.FlipCard);
         }
         else if(!secondGuess)
         {
             secondGuess = true;
-            secondGuessIndex = int.Parse(UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.name);
-            secondGuessPuzzle = gamePuzzles[secondGuessIndex].name;
-            btns[secondGuessIndex].image.sprite = gamePuzzles[secondGuessIndex];
+            secondGuessIndex = int.Parse(name);
+            secondGuessName = selectedImagePool[secondGuessIndex].name;
+            btns[secondGuessIndex].image.sprite = selectedImagePool[secondGuessIndex];
+            audioManager.PlaySFX(audioManager.FlipCard);
             StartCoroutine(CheckIfThePuzzleMatch()); 
         }
     }
@@ -87,18 +107,19 @@ public class GameController : MonoBehaviour
             {
                 index = 0; 
             }
-            gamePuzzles.Add(puzzles[index]);
+            selectedImagePool.Add(imagePool[index]);
             index++; 
         }
     }
     IEnumerator CheckIfThePuzzleMatch()
     {
-        yield return new WaitForSeconds(1f);
-        if (firstGuessPuzzle == secondGuessPuzzle && firstGuessIndex != secondGuessIndex)
+        yield return new WaitForSeconds(0.5f);
+        if (firstGuessName == secondGuessName && firstGuessIndex != secondGuessIndex)
         {
             yield return new WaitForSeconds(0.5f);
             btns[firstGuessIndex].interactable = false;
             btns[secondGuessIndex].interactable = false;
+            audioManager.PlaySFX(audioManager.Correct);
             btns[firstGuessIndex].image.color = new Color(0, 0, 0, 0);
             btns[secondGuessIndex].image.color = new Color(0, 0, 0, 0);
             CheckIfGameFinished();
@@ -109,7 +130,6 @@ public class GameController : MonoBehaviour
             btns[firstGuessIndex].image.sprite = bgImage;
             btns[secondGuessIndex].image.sprite = bgImage; 
         }
-        yield return new WaitForSeconds(0.5f);
         firstGuess = secondGuess = false; 
     }
     void CheckIfGameFinished()
@@ -118,7 +138,15 @@ public class GameController : MonoBehaviour
         if(countCorrectGuesses == gameGuesses)
         {
             Debug.Log("Game Finished");
+            audioManager.PlaySFX(audioManager.Finished);
+            //Hien win menu
+            WinMenu.SetActive(true);
+            //Ngung timer va gan' time vao` win menu
+            timerActive = false;
+            timeResult.text = timerText.text;
+            timer.SetActive(false);
         }
+
     }
     void shuffle(List<Sprite> pz)
     {
@@ -130,4 +158,33 @@ public class GameController : MonoBehaviour
             pz[id] = temp; 
         }
     }
+
+    void ShowAll()
+    {
+        for(int i = 0; i < btns.Count; i++)
+        {
+            btns[i].image.sprite = selectedImagePool[i];
+        }
+    }
+
+    public void WinGame()
+    {
+        countCorrectGuesses = gameGuesses - 1;
+        CheckIfGameFinished();
+    }
+
+    private void Update()
+    {
+        if(timerActive)
+        {
+            elapsedTime += Time.deltaTime;
+            int minutes = Mathf.FloorToInt(elapsedTime / 60);
+            int seconds = Mathf.FloorToInt(elapsedTime % 60);
+            timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+        }
+
+    }
+
+    
+
 }

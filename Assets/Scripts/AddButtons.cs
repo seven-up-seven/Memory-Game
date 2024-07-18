@@ -8,7 +8,10 @@ public class AddButtons : MonoBehaviour
     [SerializeField]
     private Transform puzzleField;
     [SerializeField]
+    private Transform canvas;
+    [SerializeField]
     private GameObject btn;
+    [SerializeField] GameObject cheatButton;
 
     public int amount; 
     
@@ -20,5 +23,6 @@ public class AddButtons : MonoBehaviour
             button.name = "" + i;
             button.transform.SetParent(puzzleField, false); 
         }
+        GameObject cheat = Instantiate(cheatButton, canvas, false);
     }
 }
