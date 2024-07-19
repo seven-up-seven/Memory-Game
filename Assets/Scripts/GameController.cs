@@ -51,7 +51,7 @@ public class GameController : MonoBehaviour
         shuffle(selectedImagePool); 
         gameGuesses = btns.Count / 2;   
     }
-        
+       
     void GetButtons()
     {
         GameObject[] objects = GameObject.FindGameObjectsWithTag("PuzzleButton");
